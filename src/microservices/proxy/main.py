@@ -1,4 +1,5 @@
 import os
+import json
 import random
 from fastapi import FastAPI, Request, Response
 import httpx
@@ -16,27 +17,39 @@ client = httpx.AsyncClient()
 
 
 async def forward_request(url: str, request: Request) -> Response:
+    """Функция для пересылки входящего запроса на целевой сервис."""
     body = await request.body()
 
-    # Копируем заголовки, но удаляем 'host', чтобы httpx подставил правильный хост целевого сервиса
     headers = dict(request.headers)
     headers.pop("host", None)
+    headers.pop("content-length", None)
 
-    proxy_req = client.build_request(
-        method=request.method,
-        url=url,
-        headers=headers,
-        content=body,
-        params=request.query_params,
-    )
+    content = body if body else None
 
-    proxy_resp = await client.send(proxy_req, stream=False)
+    try:
+        proxy_req = client.build_request(
+            method=request.method,
+            url=url,
+            headers=headers,
+            content=content,
+            params=request.query_params,
+        )
 
-    return Response(
-        content=proxy_resp.content,
-        status_code=proxy_resp.status_code,
-        headers=dict(proxy_resp.headers)
-    )
+        proxy_resp = await client.send(proxy_req, stream=False)
+
+        resp_headers = dict(proxy_resp.headers)
+        resp_headers.pop("content-length", None)
+        resp_headers.pop("content-encoding", None)
+        resp_headers.pop("transfer-encoding", None)
+
+        return Response(
+            content=proxy_resp.content,
+            status_code=proxy_resp.status_code,
+            headers=resp_headers
+        )
+    except Exception as e:
+        print(f"Ошибка проксирования на {url}: {e}")
+        return Response(content=json.dumps({"error": f"Bad Gateway: {str(e)}"}), status_code=502)
 
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])

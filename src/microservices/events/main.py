@@ -35,7 +35,7 @@ async def consume_events():
 
     try:
         async for msg in consumer:
-            logger.info(f"✅ [Consumer] Прочитано событие: {msg.value}")
+            logger.info(f"[Consumer] Прочитано событие: {msg.value}")
     except asyncio.CancelledError:
         pass
     finally:
@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
     while True:
         try:
             await producer.start()
-            logger.info("🚀 Kafka Producer запущен")
+            logger.info("Kafka Producer запущен")
             break
         except Exception as e:
             logger.warning(f"Ожидание Kafka Producer... {e}")
@@ -87,7 +87,7 @@ async def send_event(event_type: str, request: Request):
 
     payload = {"event_type": event_type, "data": data}
     await producer.send_and_wait(KAFKA_TOPIC, payload)
-    logger.info(f"📤 Отправлено событие {event_type}")
+    logger.info(f"Отправлено событие {event_type}")
 
     # Тест ожидает статус 201 (Created) и Response has status success
     from fastapi.responses import JSONResponse
