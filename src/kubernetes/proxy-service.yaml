@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy-deployment
+  namespace: cinemaabyss
+  labels:
+    app: proxy-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proxy-service
+  template:
+    metadata:
+      labels:
+        app: proxy-service
+    spec:
+      containers:
+      - name: proxy-container
+        image: "{{ .Values.proxyService.image.repository }}:{{ .Values.proxyService.image.tag }}"
+        imagePullPolicy: { { .Values.proxyService.image.pullPolicy } }
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: cinemaabyss-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: proxy-service
+spec:
+  selector:
+    app: proxy-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

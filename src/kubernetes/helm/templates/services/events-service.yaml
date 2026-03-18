@@ -6,36 +6,40 @@ metadata:
   namespace: {{ .Values.global.namespace }}
   labels:
     app: events-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.eventsService.replicas }}
   selector:
     matchLabels:
       app: events-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: events-service
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
-      - name: events-service
-       .... тут
+        - name: events-container
+          image: "{{ .Values.eventsService.image.repository }}:{{ .Values.eventsService.image.tag }}"
+          imagePullPolicy: {{ .Values.eventsService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.eventsService.service.targetPort }}
+          env:
+            - name: KAFKA_BROKER
+              value: "kafka:9092"
+            - name: KAFKA_TOPIC
+              value: "movie-events"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: events-service
   namespace: {{ .Values.global.namespace }}
-  labels:
-    app: events-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
- ........ и тут
+  selector:
+    app: events-service
+  ports:
+    - protocol: TCP
+      port: {{ .Values.eventsService.service.port }}
+      targetPort: {{ .Values.eventsService.service.targetPort }}
 {{- end }}

@@ -6,37 +6,38 @@ metadata:
   namespace: {{ .Values.global.namespace }}
   labels:
     app: proxy-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.proxyService.replicas }}
   selector:
     matchLabels:
       app: proxy-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: proxy-service
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
-      - name: proxy-service
-        ..... тут
+        - name: proxy-container
+          image: "{{ .Values.proxyService.image.repository }}:{{ .Values.proxyService.image.tag }}"
+          imagePullPolicy: {{ .Values.proxyService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.proxyService.service.targetPort }}
+          env:
+            - name: MOVIES_MIGRATION_PERCENT
+              value: {{ .Values.config.moviesMigrationPercent | quote }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: proxy-service
   namespace: {{ .Values.global.namespace }}
-  labels:
-    app: proxy-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   selector:
-    ... и тут
+    app: proxy-service
+  ports:
+    - protocol: TCP
+      port: {{ .Values.proxyService.service.port }}
+      targetPort: {{ .Values.proxyService.service.targetPort }}
 {{- end }}
