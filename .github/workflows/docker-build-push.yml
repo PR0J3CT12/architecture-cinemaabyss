@@ -128,7 +128,7 @@ jobs:
 
       - name: Run API Tests
         run: |
-          docker-compose up -d --build
+          docker compose up -d --build
           
           echo "Ожидание запуска сервисов (30 секунд)..."
           sleep 30
