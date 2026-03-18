@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: proxy-deployment
+  namespace: cinemaabyss
   labels:
     app: proxy-service
 spec:
@@ -16,13 +17,13 @@ spec:
     spec:
       containers:
       - name: proxy-container
-        image: ghcr.io/PR0J3CT12/cinemaabyss-proxy-service:latest
-        imagePullPolicy: Always
+        image: "{{ .Values.proxyService.image.repository }}:{{ .Values.proxyService.image.tag }}"
+        imagePullPolicy: { { .Values.proxyService.image.pullPolicy } }
         ports:
         - containerPort: 8000
         envFrom:
         - configMapRef:
-            name: cinemaabyss-configmap
+            name: cinemaabyss-config
 ---
 apiVersion: v1
 kind: Service

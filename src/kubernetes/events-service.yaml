@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: events-deployment
+  namespace: cinemaabyss
   labels:
     app: events-service
 spec:
@@ -16,13 +17,13 @@ spec:
     spec:
       containers:
       - name: events-container
-        image: ghcr.io/PR0J3CT12/cinemaabyss-events-service:latest
-        imagePullPolicy: Always
+        image: "{{ .Values.eventsService.image.repository }}:{{ .Values.eventsService.image.tag }}"
+        imagePullPolicy: { { .Values.eventsService.image.pullPolicy } }
         ports:
         - containerPort: 8082
         env:
         - name: KAFKA_BROKER
-          value: "kafka-service:9092"
+          value: "kafka:9092"
         - name: KAFKA_TOPIC
           value: "cinema_events"
 
