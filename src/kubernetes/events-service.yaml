@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: events-deployment
+  labels:
+    app: events-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: events-service
+  template:
+    metadata:
+      labels:
+        app: events-service
+    spec:
+      containers:
+      - name: events-container
+        image: ghcr.io/PR0J3CT12/cinemaabyss-events-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8082
+        env:
+        - name: KAFKA_BROKER
+          value: "kafka-service:9092"
+        - name: KAFKA_TOPIC
+          value: "cinema_events"
+
+        livenessProbe:
+          httpGet:
+            path: /api/events/health
+            port: 8082
+          initialDelaySeconds: 15
+          periodSeconds: 10
+
+        readinessProbe:
+          httpGet:
+            path: /api/events/health
+            port: 8082
+          initialDelaySeconds: 20
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: events-service
+spec:
+  selector:
+    app: events-service
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082

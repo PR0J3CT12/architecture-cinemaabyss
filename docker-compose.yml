@@ -96,6 +96,8 @@ services:
     environment:
       PORT: 8082
       KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: cinema_events
+    restart: on-failure
     networks:
       - cinemaabyss-network
 

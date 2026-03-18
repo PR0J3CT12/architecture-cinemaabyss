@@ -1,0 +1,44 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Container Diagram - Экосистема "Кинобездна" (To-Be Architecture)
+
+Person(user, "Пользователь", "Смотрит фильмы с ноутбука, смарт ТВ или мобильного устройства")
+
+System_Ext(recommendation_sys, "Внешняя рекомендательная система", "Генерирует персональные подборки")
+System_Ext(payment_sys, "Платёжная система", "Обрабатывает платежи по подпискам")
+System_Ext(s3_storage, "S3 Хранилище", "Хранит медиафайлы и статику")
+System_Ext(partner_cinemas, "Онлайн-кинотеатры", "Внешние поставщики контента")
+
+System_Boundary(cinema_abyss, "Экосистема Кинобездна") {
+    Container(api_gateway, "API Gateway / Proxy", "Go", "Единая точка входа. Балансировщик, реализующий паттерн Strangler Fig (Feature Flags)")
+
+    Container(movies_service, "Movies Service", "Go", "Микросервис управления метаданными фильмов")
+    ContainerDb(movies_db, "Movies DB", "PostgreSQL", "Выделенная база данных для метаданных")
+
+    Container(events_service, "Events Service", "Go", "Микросервис событий. MVP: API для создания и чтения событий")
+    ContainerQueue(kafka, "Kafka Cluster", "Kafka", "Новый брокер сообщений для потоковой передачи событий (User/Payment/Movie)")
+
+    Container(monolith, "Legacy Monolith", "Go", "Старый сервис. Обрабатывает логику, которая еще не вынесена (пользователи, платежи и др.)")
+    ContainerDb(monolith_db, "Monolith DB", "PostgreSQL", "Оригинальная база данных монолита")
+    ContainerQueue(rabbitmq, "RabbitMQ", "RabbitMQ", "Старый брокер (сохранен для текущих интеграций монолита)")
+}
+
+Rel(user, api_gateway, "REST API запросы", "HTTPS")
+
+Rel_D(api_gateway, movies_service, "Маршрутизирует /api/movies (настраиваемый % трафика)", "REST")
+Rel_D(api_gateway, events_service, "Маршрутизирует /api/events", "REST")
+Rel_D(api_gateway, monolith, "Маршрутизирует все остальные запросы", "REST")
+
+Rel(movies_service, movies_db, "Чтение/запись", "TCP")
+Rel(events_service, kafka, "Публикует (Producer) и читает (Consumer) события", "TCP")
+
+Rel(monolith, monolith_db, "Чтение/запись", "TCP")
+Rel(monolith, rabbitmq, "Отправка сообщений", "AMQP")
+Rel(rabbitmq, recommendation_sys, "Асинхронные вызовы")
+
+Rel(monolith, payment_sys, "Проведение платежей", "HTTPS")
+Rel(monolith, s3_storage, "Запрос контента", "HTTPS")
+Rel(monolith, partner_cinemas, "Интеграция контента", "HTTPS")
+
+@enduml
