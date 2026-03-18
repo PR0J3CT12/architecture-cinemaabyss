@@ -135,4 +135,4 @@ jobs:
           
           docker logs cinemaabyss-events-service
           
-          docker run --network host -v ${{ github.workspace }}/tests/postman:/etc/newman -t postman/newman run /etc/newman/cinemaabyss_collection.json --env-var "baseUrl=http://localhost:8000"
+          docker run --network host -v ${{ github.workspace }}/tests/postman:/etc/newman -t postman/newman run /etc/newman/CinemaAbyss.postman_collection.json --env-var "baseUrl=http://localhost:8000"
